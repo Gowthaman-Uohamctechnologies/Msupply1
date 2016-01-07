@@ -1,0 +1,209 @@
+package com.asana.com.asana;
+
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+/**
+ * Created by SUNIL on 12/17/2015.
+ */
+public class DataBaseHelper extends SQLiteOpenHelper {
+
+    private static final String TAG = "DataBaseHelper";
+
+    // Database Version
+    private static final int DATABASE_VERSION = 1;
+
+    public SQLiteDatabase myData;
+
+    // Database Name
+    static final String DATABASE_NAME = "ASANA.db";
+
+    // table
+   public static final String CompanyList_Table = "CompanyDetails";
+
+    public static final String CompanyID = "CompanyID";
+    public static final String CompanyName = "CompanyName";
+    public static final String CompanyOwner = "CompanyOwner";
+    public static final String CompanyStartDate = "CompanyStartDate";
+    public static final String CompanyDesc = "CompanyDesc";
+    public static final String CompanyDept = "CompanyDept";
+
+
+    private static final String CREATE_TABLE_COMPANY = "CREATE TABLE "+CompanyList_Table+" ("+CompanyID+" TEXT NOT NULL,"+CompanyName+" TEXT NOT NULL,"+CompanyOwner+" TEXT NOT NULL,"+CompanyStartDate+" TEXT NOT NULL,"+CompanyDesc+" TEXT NOT NULL,"+CompanyDept+" TEXT NOT NULL)";
+
+    private static String DB_PATH;
+
+    private final Context context;
+
+
+    public DataBaseHelper(Context context) {
+
+        super(context, DATABASE_NAME,null,DATABASE_VERSION);
+        this.context = context;
+
+        DB_PATH = context.getFilesDir().getPath();
+    }
+
+    public void createDataBase() throws IOException {
+
+        boolean dbExist = checkDataBase();
+        if (dbExist) {
+
+        } else {
+            this.getReadableDatabase();
+            try {
+                copyDataBase();
+            } catch (IOException e) {
+                throw new Error("Error copying database");
+            }
+        }
+    }
+
+    private boolean checkDataBase() {
+        File dbFile = new File(DB_PATH + DATABASE_NAME);
+        return dbFile.exists();
+    }
+
+    private void copyDataBase() throws IOException {
+
+        InputStream myInput = context.getAssets().open(DATABASE_NAME);
+        String outFileName = DB_PATH + DATABASE_NAME;
+        OutputStream myOutput = new FileOutputStream(outFileName);
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = myInput.read(buffer)) > 0) {
+            myOutput.write(buffer, 0, length);
+        }
+
+        //Close the streams
+        myOutput.flush();
+        myOutput.close();
+        myInput.close();
+        Log.i("Database", "New database has been copied to device!");
+    }
+
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(CREATE_TABLE_COMPANY);
+
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + CompanyList_Table);
+        onCreate(db);
+    }
+
+    public void openDB() throws SQLException
+    {
+        Log.i("openDB", "Checking sqliteDBInstance...");
+        if(this.myData == null)
+        {
+            Log.i("openDB", "Creating sqliteDBInstance...");
+            this.myData = this.getWritableDatabase();
+        }
+    }
+
+    public boolean insertcompanydata(String CompanyID,String CompanyName,String CompanyOwner,String CompanyStartDate,String CompanyDesc,String CompanyDept)
+    {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues cv = new ContentValues();
+            cv.put("CompanyID",CompanyID);
+            cv.put("CompanyName",CompanyName);
+            cv.put("CompanyOwner",CompanyOwner);
+            cv.put("CompanyStartDate",CompanyStartDate);
+            cv.put("CompanyDesc",CompanyDesc);
+            cv.put("CompanyDept",CompanyDept);
+            db.insert(CompanyList_Table, null, cv);
+            Log.e("insert===", "Records insereted successfully");
+        }catch (Exception e){
+            Log.e("problem", e + "");
+        }
+        return true;
+    }
+
+    public String[][] getCompanyDetails()
+    {
+        try{
+            String arrDataAsana[][] = null;
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            Cursor cr = db.rawQuery("Select * from CompanyDetails",null);
+
+            if(cr != null){
+                if(cr.moveToFirst()){
+                    arrDataAsana = new String[cr.getCount()][cr.getColumnCount()];
+                    int i = 0;
+
+                    do{
+                        arrDataAsana[i][0] = cr.getString(0);
+                        arrDataAsana[i][1] = cr.getString(1);
+                        arrDataAsana[i][2] = cr.getString(2);
+                        arrDataAsana[i][3] = cr.getString(3);
+                        arrDataAsana[i][4] = cr.getString(4);
+                        arrDataAsana[i][5] = cr.getString(5);
+
+                        System.out.println("rc:" + i + 1 + "::: " + arrDataAsana[i]);
+                        i++;
+                    }while (cr.moveToNext());
+                }
+            }
+            db.close();
+            Log.e("Checking asana data", "Checked success");
+            return arrDataAsana;
+        }catch (Exception e){
+            return  null;
+        }
+
+    }
+
+    public String[][] getCompanyNameDetails(String Companyname)
+    {
+        try{
+            String arrDataAsana[][] = null;
+            SQLiteDatabase db = this.getReadableDatabase();
+
+            Cursor cr = db.rawQuery("SELECT * FROM CompanyDetails where CompanyName = '" + CompanyData.paramString + "'",null);
+            Log.e("cursor", "" + "SELECT * FROM CompanyDetails where CompanyName = '" + CompanyData.paramString + "'",null);
+            if(cr != null){
+                if(cr.moveToFirst()){
+                    arrDataAsana = new String[cr.getCount()][cr.getColumnCount()];
+                    int i = 0;
+
+                    do{
+                        arrDataAsana[i][0] = cr.getString(0);
+                        arrDataAsana[i][1] = cr.getString(1);
+                        arrDataAsana[i][2] = cr.getString(2);
+                        arrDataAsana[i][3] = cr.getString(3);
+                        arrDataAsana[i][4] = cr.getString(4);
+                        arrDataAsana[i][5] = cr.getString(5);
+
+                        System.out.println("rc:" + i + 1 + "::: " + arrDataAsana[i]);
+                        i++;
+                    }while (cr.moveToNext());
+                }
+            }
+            db.close();
+            Log.e("Checking asana data", "Checked success");
+            return arrDataAsana;
+        }catch (Exception e){
+            return  null;
+        }
+
+    }
+
+
+}
