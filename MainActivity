@@ -1,0 +1,260 @@
+package com.asana.com.asana;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.Bundle;
+
+import android.os.Environment;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+
+
+public class MainActivity extends Activity {
+
+    static String companyid,companyname,companyowner,companystartdate,companydesc,companydepts;
+    ProgressDialog pd;
+    JSONObject iObj = null;
+    JSONArray jarray;
+
+    DataBaseHelper dbh;
+
+    static InputStream is = null;
+    String jsonresponce;
+    JSONObject jobj = null;
+    Button btnclick,btndownload;
+
+    final String url = "https://api.myjson.com/bins/2ggcs";
+
+    private static final String TAG_COMPANYID = "companyID";
+    private static final String TAG_COMPANYNAME = "comapnyName";
+    private static final String TAG_COMPANYOWNER = "companyOwner";
+    private static final String TAG_COMPANYSTARTDATE = "companyStartDate";
+    private static final String TAG_COMPANYDESC = "companyDescription";
+    private static final String TAG_COMPANYDEPT = "companyDepartments";
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        dbh = new DataBaseHelper(this);
+
+        //creating DB.
+        try
+        {
+            dbh.createDataBase();
+        }
+        catch (IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        //creating directory...
+        File sdcard = Environment.getExternalStorageDirectory();
+        File f=new File(sdcard+"/ASANA_DATABASE");
+        if (!f.exists())
+        {
+            f.mkdir();
+        }
+
+        try{
+            dbh.openDB();
+        }catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+
+        btnclick = (Button)findViewById(R.id.btn_click);
+        btndownload = (Button)findViewById(R.id.btn_download);
+
+        btndownload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new CompanyDataAsyctask().execute();
+
+                btndownload.setVisibility(View.GONE);
+
+                Toast.makeText(MainActivity.this,"Data Saved to local Database",Toast.LENGTH_LONG).show();
+
+            }
+
+
+        });
+
+        btnclick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Intent i = new Intent(MainActivity.this,CompanyData.class);
+                startActivity(i);
+
+            }
+        });
+    }
+
+
+    class CompanyDataAsyctask extends AsyncTask<String,String,String> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            pd = new ProgressDialog(MainActivity.this);
+            pd.setMessage("Loading...");
+            pd.setCanceledOnTouchOutside(false);
+            pd.setCancelable(false);
+            pd.show();
+        }
+
+        @Override
+        protected String doInBackground(String... strings) {
+
+            // sbParams = new StringBuilder();
+            try {
+                DefaultHttpClient httpClient = new DefaultHttpClient();
+                URI serverURI = new URI(url);
+                HttpGet httpGet = new HttpGet(serverURI);
+                HttpResponse httpResponse = httpClient.execute(httpGet);
+                HttpEntity httpEntity = httpResponse.getEntity();
+                //InputStream isResponse = httpEntity.getContent();
+                is = httpEntity.getContent();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                String line = null;
+      /*          urlObj = new URL(url);
+
+                conn = (HttpURLConnection) urlObj.openConnection();
+                conn.setDoOutput(true);
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept-Charset", charset);
+
+                conn.setReadTimeout(10000);
+                conn.setConnectTimeout(15000);
+
+                conn.connect();
+
+                paramString = sbParams.toString();
+                Log.e("jsondata",paramString);
+
+                wr = new DataOutputStream(conn.getOutputStream());
+                wr.writeBytes(paramString);
+                wr.flush();
+                wr.close();
+
+            }catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            try{
+
+                InputStream is = conn.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+                if(is == null) {
+                    return null;
+                }
+                reader = new BufferedReader(new InputStreamReader(is));
+
+                String line;
+                while ((line = reader.readLine()) != null)
+
+                    buffer.append(line + "\n");
+
+                if(buffer.length() == 0)
+                    return  null;
+
+                return buffer.toString();
+
+
+            }catch (Exception e){
+                Log.e("TAG", "IO Exception", e);
+                e.printStackTrace();
+                return null;
+            }finally {
+                if(conn != null){
+                    conn.disconnect();
+                }
+                if(reader != null){
+                    try{
+                        reader.close();
+                    }catch (final IOException e){
+                        e.printStackTrace();
+                        Log.e("TAG", "Error closing stream", e);
+
+                    }
+                }
+
+            }*/
+                try {
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line + "\n");
+                    }
+                    is.close();
+                    reader.close();
+                    jsonresponce = sb.toString();
+                    Log.e("jsondata", jsonresponce);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return jsonresponce;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+            pd.dismiss();
+            try {
+                jarray = new JSONArray(jsonresponce);
+                Log.e("jarrdata", "" + jarray);
+
+                for (int i = 0; i < jarray.length(); i++) {
+                    jobj = jarray.getJSONObject(i);
+                    Log.e("jobjdata", "" + jobj);
+
+                    companyid = jobj.getString(TAG_COMPANYID);
+                    companyname = jobj.getString(TAG_COMPANYNAME);
+                    companyowner = jobj.getString(TAG_COMPANYOWNER);
+                    companystartdate = jobj.getString(TAG_COMPANYSTARTDATE);
+                    companydesc = jobj.getString(TAG_COMPANYDESC);
+                    companydepts = jobj.getString(TAG_COMPANYDEPT);
+
+                    dbh.insertcompanydata(companyid, companyname, companyowner, companystartdate, companydesc, companydepts);
+
+
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+
+    }
+}
